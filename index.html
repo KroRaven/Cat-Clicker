@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cat Clicker</title>
+    <style>
+        body{
+            font-size: 2rem;
+        }
+        button{
+            font-size: 2rem;
+        }
+
+    </style>
+</head>
+
+
+
+<body>
+
+    <div>
+        <input id="inpCharName" type="text" placeholder="name">
+        <input id="radioCharFire" class="radioCharElements" name="elementSelect" value="fire" type="radio" checked> Fire
+        <input id="radioCharWater" class="radioCharElements" name="elementSelect" value="water" type="radio"> Water
+        <button id="btnCharCreate">Create Character</button>
+        <br>
+        <span>*name*</span> <button>Load Character</button>
+    </div>
+
+    <hr>
+    <hr>
+
+    <div>
+        <p>Prey: <output id="outPrey"> 0 </output></p>
+        <p>Herb: <output id="outHerb"> 0 </output></p>
+    </div>
+
+    <div>
+        <button id="btnHunt"> Hunt! </button>
+        <button id="btnHerb"> Collect! </button>
+    </div>
+
+    <br>
+    
+    <div>
+        <button id="pepper" class="btnsBuy"> Buy Pepper </button>
+        <button id="sammy" class="btnsBuy"> Buy Sammy </button>
+    </div>
+
+    <br>
+
+    <div>
+        <button id="skibidi" class="btnsUpgrade" data-cat="pepper"> Pepper Skill 1 </button>
+        <button id="gyatt" class="btnsUpgrade" data-cat="pepper"> Pepper Skill 2 </button>
+    </div>
+
+    <hr>
+
+    <div>
+        <button id="goldenPaws" class="btnsSkill">Char Skill 1</button>
+        <button id="polishedClaws" class="btnsSkill">Char Skill 2</button>
+    </div>
+
+    <hr>
+    <hr>
+
+    <div>
+        <button id="fangFight" class="btnsFight" data-enemy="fang">Fight Fang</button>
+        <button id="fangFight" class="btnsFight" data-enemy="keyn">Fight Keyn</button>
+    </div>
+</body>
+
+
+<script>
+    /* Skill Class. Instances are the Skills of a CharCat, in which they are forming the SkillTree 
+                         also are the Skills of Cats     , in which they are forming the SkillTree*/
+    class Skill{
+        constructor({name="", cost=0, minLvL=0, req=[], active=false, effect=function(){}, }){
+            this.name = name
+            this.cost = cost
+            this.minLvL = minLvL
+            this.req = req           // Required skills, List of skills (which has to be active)
+            this.active = active     // Boolean - bought or not
+            this.effect = effect     // Function
+        }
+
+        buySkill(Game){
+            if ( (this.req.every( (skill, i, arr) => {skill.active}) || this.req == []) && 
+                 (Game.gameStats.LvL >= this.minLvL) && (!this.active)
+                ){
+                Game.gameStats.prey -= this.cost
+                this.activate(Game)
+            }
+        }
+        activate(Game){
+            this.active = true
+            this.effect()
+        }
+    }
+    const goldenPaws = new Skill({effect: () => pepper.preyClick *= 2, name: "goldenPaws"})
+    const polishedClaws = new Skill({effect: () => sammy.herbClick *= 3, name: "polishedClaws"})
+
+    const skillTree = [goldenPaws, polishedClaws]
+
+    /* CharCat Class. Instance is the Player 'disguised' as a Cat. */
+    class CharCat{
+        constructor({element="NaE", skillTree=[], }){
+            this.element = element
+            this.skillTree = skillTree
+        }
+    }
+    const fireChar = new CharCat({element:'fire', skillTree:[]});
+    const waterChar = new CharCat({element:'water', skillTree:[]});
+
+    const charArray = [fireChar, waterChar];
+
+    /* Cat Class. Instances are the idle Cats */
+    class Cat{
+        constructor({name, amount=0, 
+                     preyCost=0, herbCost=0,
+                     preyClick=0, preySecond=0, herbClick=0, herbSecond=0,
+                     hitpoints=0, damage=0, element="NaE",
+                     skillTree=[]}){
+            this.name = name
+            this.amount = amount
+            this.preyCost = preyCost
+            this.preyClick = preyClick
+            this.preySecond = preySecond
+            this.herbClick = herbClick
+            this.herbSecond = herbSecond
+            this.skillTree = skillTree
+        }
+
+        buyCat(Game){
+            if (Game.gameStats.prey >= this.preyCost){
+                Game.gameStats.prey -= this.preyCost
+                this.amount += 1
+                this.preyCost *= 1.2
+            }
+        }
+    }
+    const skibidi = new Skill({effect: () => pepper.preyClick *= 5, name: "skibidi"})
+    const gyatt = new Skill({effect: () => pepper.preyClick *= 200, name: "gyatt"})
+    const pepperSkillTree = [skibidi, gyatt]
+
+    const pepper = new Cat({name: 'pepper', preyCost: 10, preyClick:1, skillTree:pepperSkillTree,});
+    const sammy = new Cat({name: 'sammy', preyCost: 30, preyClick:2, herbClick:3,});
+
+    const catsArray = [pepper, sammy];
+
+    class Char{
+        constructor({name,
+                    charCat, catsArray, 
+                    gameStats, misc
+        }){
+            this.userStats = {name: name}
+            this.gameStats = {prey: gameStats.prey, herb: gameStats.herb, LvL: gameStats.LvL}
+            this.charStats = {charCat: charCat}
+            this.catsStats = {catsArray: catsArray}
+            this.misc = misc
+        }
+
+        calcHunt(){
+            const preyPerClick = 1 + this.catsStats.catsArray.reduce( (acc, cur) => acc + (cur.amount * cur.preyClick), 0);
+            return preyPerClick
+        }
+        calcHunt(){
+            const herbPerClick = 1 + this.catsStats.catsArray.reduce( (acc, cur) => acc + (cur.amount * cur.herbClick), 0);
+            return herbPerClick
+        }
+        calcHuntPreySec(){
+        // Calculation
+            const preyPerSecond = 0 + this.catsStats.catsArray.reduce( (acc, cur) => acc + (cur.amount * cur.preySecond), 0);
+            const herbPerSecond = 0 + this.catsStats.catsArray.reduce( (acc, cur) => acc + (cur.amount * cur.herbSecond), 0);
+            return [preyPerSecond, herbPerSecond]
+        }
+    }
+
+
+    /* Game Object. Every Information about the Game is Stored here. */    
+    const Game = {
+        userStats: {
+            name: "",
+        },
+
+        gameStats: {
+            prey: 0,
+            herb: 0,
+            LvL: 0,
+        },
+
+        charStats: {
+            element: "NaE",
+            skillTree: skillTree,
+        },
+
+        catsStats: {
+            catsArray: catsArray,
+        },
+
+        misc: {},
+    }
+
+
+    let currChar;
+
+    function startGame(char){
+        console.log(char);
+        console.log(JSON.stringify(char));
+        console.log(char.calcHunt());
+        currChar = char;
+    }
+    // XXX Fundamental Function XXX: Create a Character
+    function createChar(name, element){
+        const charCat = charArray.find( (char) => char.element == element);
+        const gameStats = {prey: 0, herb: 0, LvL: 0};
+        const misc =  {};
+
+        const newChar = new Char({name: name,
+                                  charCat: charCat, catsArray: catsArray,
+                                  gameStats: gameStats, misc: misc
+                                });
+        startGame(newChar);
+    }
+
+
+    // XXX Fundamental Function XXX: Hunt, Prey on Click
+    function calcHunt(Game){
+        // Calculation
+        const preyPerClick = 1 + catsArray.reduce( (acc, cur) => acc + (cur.amount * cur.preyClick), 0);
+        // Add to the gameStats
+        Game.gameStats.prey += preyPerClick;
+    }
+    function calcHerb(Game){
+        // Calculation
+        const herbPerClick = 1 + catsArray.reduce( (acc, cur) => acc + (cur.amount * cur.herbClick), 0);
+        // Add to the gameStats
+        Game.gameStats.herb += herbPerClick;
+    }
+    // XXX Fundamental Function XXX: AutoHunt, Prey per Second
+    function calcHuntPreySec(Game){
+        // Calculation
+        const preyPerSecond = 0 + catsArray.reduce( (acc, cur) => acc + (cur.amount * cur.preySecond), 0);
+        const herbPerSecond = 0 + catsArray.reduce( (acc, cur) => acc + (cur.amount * cur.herbSecond), 0);
+        // Add to the gameStats
+        Game.gameStats.prey += preyPerSecond;
+        Game.gameStats.herb += herbPerSecond;
+    }
+
+
+
+
+    // UI Function: Hunt on Click
+    function handleHunt(){
+        calcHunt(Game);
+        render();
+    }
+    // UI Function: Herb on Click
+    function handleHerb(){
+        calcHerb(Game);
+        render();
+    }
+    // UI Function: Hunt + Herb per Second
+    function handleHuntHerbSec(){
+        calcHuntPreySec(Game);
+        render();
+    }
+    // UI Function: Buy on Click
+    function handleBuy(Game, cat){
+        cat.buyCat(Game);
+        render();
+    }
+    // UI Function: Create new Char on Click
+    function handleCreate(){
+        // Necessary Input Values
+        const name = document.getElementById("inpCharName").value;
+        const element = document.querySelector('input[name="elementSelect"]:checked').value;
+
+        createChar(name, element);
+        render();
+    }
+
+
+
+    // UX Function: Display and re-Render Stats
+    function render(){
+        document.getElementById("outPrey").innerText = Math.floor(Game.gameStats.prey);
+        document.getElementById("outHerb").innerText = Math.floor(Game.gameStats.herb);
+    }
+
+    //setInterval(handleHuntHerbSec, 1000);
+
+
+    // Event Listeners
+    const btnHunt = document.getElementById("btnHunt"); btnHunt.addEventListener("click", () => handleHunt());
+    const btnHerb = document.getElementById("btnHerb"); btnHerb.addEventListener("click", () => handleHerb());
+
+    const btnCharCreate = document.getElementById("btnCharCreate"); btnCharCreate.addEventListener("click", () => handleCreate());
+
+    const btnsBuy = document.querySelectorAll(".btnsBuy"); 
+    Array.from(btnsBuy).forEach(element => {
+        const catName = element.id;
+        const cat = Game.catsStats.catsArray.find( (cat) => cat.name == catName);
+        element.addEventListener("click", () => handleBuy(Game, cat));
+    });
+
+    const btnsSkill = document.querySelectorAll(".btnsSkill");
+    Array.from(btnsSkill).forEach(element => {
+        const skillName = element.id; 
+        const skill = Game.charStats.skillTree.find( skill => skill.name == skillName);
+        element.addEventListener("click", () => skill.buySkill(Game));
+    });
+
+    const btnsUpgrade = document.querySelectorAll(".btnsUpgrade");
+    Array.from(btnsUpgrade).forEach(element =>{
+        const catName = element.dataset.cat;
+        const cat = Game.catsStats.catsArray.find( (cat) => cat.name == catName)
+        const skillName = element.id;
+        const skill = cat.skillTree.find( skill => skill.name == skillName);
+        element.addEventListener("click", () => skill.buySkill(Game));
+    });
+
+
+    const btnsFight = document.querySelectorAll(".btnsFight");
+    Array.from(btnsFight).forEach(element =>
+        console.log(element)
+    );
+
+</script>
+</html>
